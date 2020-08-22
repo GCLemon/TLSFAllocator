@@ -67,7 +67,7 @@ void TLSFAllocator::Initialize(uint8_t* ptr, size_t size, size_t split)
 
 	// カテゴリリストを初期化
 	m_fliFlagList = 0;
-	memset(m_freeBlockList, 0, sizeof(size_t) * 64);
+	memset(m_sliFlagList, 0, sizeof(size_t) * 64);
 
 	// 先頭管理タグを初期化し、フリーブロックリストに代入する
 	FreeBlockHeader* header = (FreeBlockHeader*)m_buffer;

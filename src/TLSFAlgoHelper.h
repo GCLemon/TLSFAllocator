@@ -67,6 +67,16 @@ public:
 static const int MAX_FREELIST = 4096;
 
 /**
+ @brief 第1カテゴリの最大数
+ */
+static const int MAX_FLI_CATEGORY = 64;
+
+/**
+ @brief 第2カテゴリの最大数
+ */
+static const int MAX_SLI_CATEGORY = 64;
+
+/**
  @brief 先頭菅タグ・末端管理タグの総合サイズ
  */
 static const size_t TAG_SIZE = sizeof(BlockHeader) + sizeof(size_t);

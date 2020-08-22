@@ -1,8 +1,6 @@
 ﻿#pragma once
 
-#include <climits>
 #include <cmath>
-#include <cstring>
 #include <mutex>
 #include <tuple>
 
@@ -43,7 +41,7 @@ private:
 	/**
 	 @brief ブロックが各第2カテゴリに所属しているかのフラグ
 	 */
-	size_t m_sliFlagList[64];
+	size_t m_sliFlagList[MAX_FLI_CATEGORY];
 
 	/**
 	 @brief 第2カテゴリの分割数

@@ -3,10 +3,8 @@
 # カレントディレクトリの設定
 cd `dirname $0`
 
-# ディレクトリの移動
-if [ ! -e build ]; then
-    mkdir build
-fi
+# buildディレクトリを作成し、移動
+mkdir build
 cd build
 
 # プロジェクトの作成
