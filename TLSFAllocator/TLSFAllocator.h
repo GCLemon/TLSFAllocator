@@ -61,22 +61,16 @@ private:
 	bool m_isBufferInternal;
 
 	/**
-	 @brief 二進数であらわされた数値について1である桁数を数える
-	 @param x ビット列
-	 */
-	size_t BitCount(size_t x);
-
-	/**
 	 @brief 値が1である最上位ビットを取得する
 	 @param x ビット列
 	 */
-	size_t MostSignificantBit(size_t x);
+	inline size_t MostSignificantBit(size_t x);
 
 	/**
 	 @brief 値が1である最下位ビットを取得する
 	 @param x ビット列
 	 */
-	size_t LeastSignificantBit(size_t x);
+	inline size_t LeastSignificantBit(size_t x);
 
 	/**
 	 @brief メモリブロックのカテゴリを取得する

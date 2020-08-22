@@ -45,17 +45,24 @@ private:
 	 */
 	void* selfPtr = nullptr;
 
-	static void* dll_TLSFAllocator_Constructor(void* ptr, size_t size, size_t split)
+	static void* dll_TLSFAllocator_Constructor_0(void* ptr, size_t size, size_t split)
 	{
 		typedef void* (*proc_t)(void*, size_t, size_t);
 		static proc_t proc = dllTlsf->GetProc<proc_t>("dll_TLSFAllocator_Constructor_0");
 		return proc(ptr, size, split);
 	}
 
+	static void* dll_TLSFAllocator_Constructor_1(size_t size, size_t split)
+	{
+		typedef void* (*proc_t)(size_t, size_t);
+		static proc_t proc = dllTlsf->GetProc<proc_t>("dll_TLSFAllocator_Constructor_1");
+		return proc(size, split);
+	}
+
 	static void  dll_TLSFAllocator_Destructor(void* selfPtr)
 	{
 		typedef void (*proc_t)(void*);
-		static proc_t proc = dllTlsf->GetProc<proc_t>(" dll_TLSFAllocator_Destructor_1");
+		static proc_t proc = dllTlsf->GetProc<proc_t>(" dll_TLSFAllocator_Destructor");
 		proc(selfPtr);
 		selfPtr = nullptr;
 	}
@@ -90,7 +97,17 @@ public:
 	 */
 	TLSFAllocator(void* ptr, size_t size, size_t split = 8)
 	{
-		selfPtr = dll_TLSFAllocator_Constructor(ptr, size, split);
+		selfPtr = dll_TLSFAllocator_Constructor_0(ptr, size, split);
+	}
+
+	/**
+	 @brief コンストラクタ
+	 @param size 初期化した領域のサイズ
+	 @param split 第2カテゴリの分割数
+	 */
+	TLSFAllocator(size_t size, size_t split = 8)
+	{
+		selfPtr = dll_TLSFAllocator_Constructor_1(size, split);
 	}
 
 	/**

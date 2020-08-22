@@ -15,27 +15,32 @@ TLSFAllocator::~TLSFAllocator()
 	if (m_isBufferInternal) delete[] m_buffer;
 }
 
-size_t TLSFAllocator::BitCount(size_t x)
+inline size_t TLSFAllocator::MostSignificantBit(size_t x)
 {
-	x = (x & 0x5555555555555555) + (x >> 1 & 0x5555555555555555);
-	x = (x & 0x3333333333333333) + (x >> 2 & 0x3333333333333333);
-	x = (x & 0x0f0f0f0f0f0f0f0f) + (x >> 4 & 0x0f0f0f0f0f0f0f0f);
-	x = (x & 0x00ff00ff00ff00ff) + (x >> 8 & 0x00ff00ff00ff00ff);
-	x = (x & 0x0000ffff0000ffff) + (x >> 16 & 0x0000ffff0000ffff);
-	x = (x & 0x00000000ffffffff) + (x >> 32 & 0x00000000ffffffff);
-	return x;
+	size_t msb = 63;
+
+	if (!(x & 0xffffffff00000000)) { x <<= 32; msb -= 32; }
+	if (!(x & 0xffff000000000000)) { x <<= 16; msb -= 16; }
+	if (!(x & 0xff00000000000000)) { x <<= 8; msb -= 8; }
+	if (!(x & 0xf000000000000000)) { x <<= 4; msb -= 4; }
+	if (!(x & 0xc000000000000000)) { x <<= 2; msb -= 2; }
+	if (!(x & 0x8000000000000000)) { x <<= 1; msb -= 1; }
+
+	return msb;
 }
 
-size_t TLSFAllocator::MostSignificantBit(size_t x)
+inline size_t TLSFAllocator::LeastSignificantBit(size_t x)
 {
-	for (int i = 1; i <= 32; i *= 2) x |= (x >> i);
-	return BitCount(x) - 1;
-}
+	size_t lsb = 0; x &= ~x + 1;
 
-size_t TLSFAllocator::LeastSignificantBit(size_t x)
-{
-	for (int i = 1; i <= 32; i *= 2) x |= (x << i);
-	return 64 - BitCount(x);
+	if (x & 0xffffffff00000000) lsb += 32;
+	if (x & 0xffff0000ffff0000) lsb += 16;
+	if (x & 0xff00ff00ff00ff00) lsb += 8;
+	if (x & 0xf0f0f0f0f0f0f0f0) lsb += 4;
+	if (x & 0xcccccccccccccccc) lsb += 2;
+	if (x & 0xaaaaaaaaaaaaaaaa) lsb += 1;
+
+	return lsb;
 }
 
 void TLSFAllocator::Initialize(uint8_t* ptr, size_t size, size_t split)

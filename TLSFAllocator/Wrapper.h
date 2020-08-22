@@ -1,12 +1,19 @@
 #pragma once
 
+#include <stdio.h>
+#include <stdint.h>
+
 #include "TLSFAllocator.h"
 
-#ifndef DECLSPEC
 #if defined(_WIN32) || defined(__WIN32__) || defined(__CYGWIN__)
-#define DECLSPEC __declspec(dllexport)
+#include <Windows.h>
+#endif
+
+#ifndef DLL_EXPORT
+#if defined(_WIN32) || defined(__WIN32__) || defined(__CYGWIN__)
+#define DLL_EXPORT __declspec(dllexport)
 #else
-#define DECLSPEC
+#define DLL_EXPORT
 #endif
 #endif
 
@@ -18,17 +25,17 @@
 #endif
 #endif
 
-extern "C" 
+extern "C"
 {
-	DECLSPEC void* STDCALL dll_TLSFAllocator_Constructor_0(void* ptr, size_t size, size_t split);
+	DLL_EXPORT void* STDCALL dll_TLSFAllocator_Constructor_0(void* ptr, size_t size, size_t split);
 
-	DECLSPEC void* STDCALL dll_TLSFAllocator_Constructor_1(size_t size, size_t split);
+	DLL_EXPORT void* STDCALL dll_TLSFAllocator_Constructor_1(size_t size, size_t split);
 
-	DECLSPEC void STDCALL dll_TLSFAllocator_Destructor(void* selfPtr, size_t size, size_t split);
+	DLL_EXPORT void STDCALL dll_TLSFAllocator_Destructor(void* selfPtr, size_t size, size_t split);
 
-	DECLSPEC void* STDCALL dll_TLSFAllocator_Alloc(void* selfPtr, const size_t size);
+	DLL_EXPORT void* STDCALL dll_TLSFAllocator_Alloc(void* selfPtr, const size_t size);
 
-	DECLSPEC void STDCALL dll_TLSFAllocator_Free(void* selfPtr, void* ptr);
+	DLL_EXPORT void STDCALL dll_TLSFAllocator_Free(void* selfPtr, void* ptr);
 
-	DECLSPEC void STDCALL dll_TLSFAllocator_PrintDebugInfo(void* selfPtr);
+	DLL_EXPORT void STDCALL dll_TLSFAllocator_PrintDebugInfo(void* selfPtr);
 }
