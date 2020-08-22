@@ -136,7 +136,7 @@ void TLSFAllocatorTest(size_t random_seed, size_t alloc_size, size_t loop_count)
 
 	// 領域の解放処理
 	for (int i = 0; i < loop_count; ++i) im->Free(vec[i]);
-	delete[] ptr;
+	delete[] (char*)ptr;
 }
 
 /**
