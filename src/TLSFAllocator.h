@@ -1,6 +1,8 @@
 ﻿#pragma once
 
+#include <climits>
 #include <cmath>
+#include <cstring>
 #include <mutex>
 #include <tuple>
 
@@ -118,6 +120,11 @@ private:
 	void DeleteFromFreeList(FreeBlockHeader* header, size_t total_sizee);
 
 public:
+	/**
+	 @brief メモリ操作をスレッドセーフにするか
+	 */ 
+	bool IsThreadSafe;
+
 	/**
 	 @brief コンストラクタ
 	 @param ptr 初期化した領域の先頭アドレス

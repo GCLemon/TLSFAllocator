@@ -45,7 +45,9 @@ inline size_t TLSFAllocator::LeastSignificantBit(size_t x)
 
 void TLSFAllocator::Initialize(uint8_t* ptr, size_t size, size_t split)
 {
-	// ”X‰Šú‰»
+	IsThreadSafe = false;
+
+	// è«¸ã€…åˆæœŸåŒ–
 	if (ptr != nullptr)
 	{
 		m_buffer = ptr;
@@ -60,152 +62,152 @@ void TLSFAllocator::Initialize(uint8_t* ptr, size_t size, size_t split)
 	m_split = split;
 	m_splitLog = log2l(split);
 
-	// ƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚ğ‰Šú‰»
+	// ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã‚’åˆæœŸåŒ–
 	memset(m_freeBlockList, 0, sizeof(FreeBlockHeader*) * MAX_FREELIST);
 
-	// ƒJƒeƒSƒŠƒŠƒXƒg‚ğ‰Šú‰»
+	// ã‚«ãƒ†ã‚´ãƒªãƒªã‚¹ãƒˆã‚’åˆæœŸåŒ–
 	m_fliFlagList = 0;
 	memset(m_freeBlockList, 0, sizeof(size_t) * 64);
 
-	// æ“ªŠÇ—ƒ^ƒO‚ğ‰Šú‰»‚µAƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚É‘ã“ü‚·‚é
+	// å…ˆé ­ç®¡ç†ã‚¿ã‚°ã‚’åˆæœŸåŒ–ã—ã€ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã«ä»£å…¥ã™ã‚‹
 	FreeBlockHeader* header = (FreeBlockHeader*)m_buffer;
 	header->SetBlockSize(size - TAG_SIZE);
 	header->SetIsOccupied(false);
 	AddToFreeList(header, size);
 
-	// ––’[ŠÇ—ƒ^ƒO‚ğ‰Šú‰»
+	// æœ«ç«¯ç®¡ç†ã‚¿ã‚°ã‚’åˆæœŸåŒ–
 	size_t* tailer = (size_t*)((uint8_t*)ptr + size - sizeof(size_t));
 	*tailer = size;
 }
 
 std::tuple<size_t, size_t> TLSFAllocator::GetCategories(size_t size)
 {
-	// ‘æ1ƒJƒeƒSƒŠ‚ÌƒCƒ“ƒfƒbƒNƒX‚ğ‹‚ß‚é
+	// ç¬¬1ã‚«ãƒ†ã‚´ãƒªã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’æ±‚ã‚ã‚‹
 	size_t fli = MostSignificantBit(size);
 
-	// ‘æ2ƒJƒeƒSƒŠ‚ÌƒCƒ“ƒfƒbƒNƒX‚ğ‹‚ß‚é
+	// ç¬¬2ã‚«ãƒ†ã‚´ãƒªã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’æ±‚ã‚ã‚‹
 	size_t mask = (1ULL << fli) - 1ULL;
 	size_t shift = fli - m_splitLog;
 	size_t sli = (size & mask) >> shift;
 
-	// ƒJƒeƒSƒŠ‚ğ•Ô‚·
+	// ã‚«ãƒ†ã‚´ãƒªã‚’è¿”ã™
 	return std::make_tuple(fli, sli);
 }
 
 std::tuple<FreeBlockHeader*, FreeBlockHeader*>  TLSFAllocator::DevideMemory(FreeBlockHeader* header, size_t size)
 {
-	// ƒƒ‚ƒŠƒuƒƒbƒN‚ªg—p’†‚È‚ç‚Î—áŠO‚ğ“Š‚°‚é
+	// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ãŒä½¿ç”¨ä¸­ãªã‚‰ã°ä¾‹å¤–ã‚’æŠ•ã’ã‚‹
 	if (header->GetIsOccupied())
 		throw "[Exception] This memory block is already occupied.";
 
-	// •ªŠ„Œã‚Ìƒƒ‚ƒŠƒuƒƒbƒN‚ÉŠÇ—î•ñ‚ğ‘‚«‚ŞƒXƒy[ƒX‚ª‚È‚©‚Á‚½ê‡A•ªŠ„¸”s
+	// åˆ†å‰²å¾Œã®ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã«ç®¡ç†æƒ…å ±ã‚’æ›¸ãè¾¼ã‚€ã‚¹ãƒšãƒ¼ã‚¹ãŒãªã‹ã£ãŸå ´åˆã€åˆ†å‰²å¤±æ•—
 	if (header->GetBlockSize() <= size)
 		throw "[Exception] There is no enough space to write block header.";
 
-	// —]‚Á‚½ƒƒ‚ƒŠƒuƒƒbƒN‚ÌƒTƒCƒY‚ğ‹‚ß‚é
+	// ä½™ã£ãŸãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã®ã‚µã‚¤ã‚ºã‚’æ±‚ã‚ã‚‹
 	size_t rest_size = header->GetBlockSize() + TAG_SIZE - size;
 
-	// 1‚Â–Ú‚Ìæ“ªŠÇ—ƒ^ƒOE––’[ŠÇ—ƒ^ƒO‚Ì‘‚«Š·‚¦
+	// 1ã¤ç›®ã®å…ˆé ­ç®¡ç†ã‚¿ã‚°ãƒ»æœ«ç«¯ç®¡ç†ã‚¿ã‚°ã®æ›¸ãæ›ãˆ
 	header->SetBlockSize(size - TAG_SIZE);
 	size_t* tailer = (size_t*)((uint8_t*)header + size - sizeof(size_t));
 	*tailer = size;
 
-	// 2‚Â–Ú‚Ìæ“ªŠÇ—ƒ^ƒOE––’[ŠÇ—ƒ^ƒO‚Ì‘‚«Š·‚¦
+	// 2ã¤ç›®ã®å…ˆé ­ç®¡ç†ã‚¿ã‚°ãƒ»æœ«ç«¯ç®¡ç†ã‚¿ã‚°ã®æ›¸ãæ›ãˆ
 	FreeBlockHeader* next_header = (FreeBlockHeader*)((uint8_t*)header + size);
 	next_header->SetBlockSize(rest_size - TAG_SIZE);
 	next_header->SetIsOccupied(false);
 	size_t* next_tailer = (size_t*)((uint8_t*)next_header + rest_size - sizeof(size_t));
 	*next_tailer = rest_size;
 
-	// •ªŠ„‚µ‚½ƒƒ‚ƒŠ—Ìˆæ‚Ìæ“ªŠÇ—ƒ^ƒO‚ğ•Ô‚·
+	// åˆ†å‰²ã—ãŸãƒ¡ãƒ¢ãƒªé ˜åŸŸã®å…ˆé ­ç®¡ç†ã‚¿ã‚°ã‚’è¿”ã™
 	return std::make_tuple(header, next_header);
 }
 
 FreeBlockHeader* TLSFAllocator::MergeMemory(FreeBlockHeader* header, size_t size)
 {
-	// ƒƒ‚ƒŠƒuƒƒbƒN‚ªg—p’†‚È‚ç‚Î—áŠO‚ğ“Š‚°‚é
+	// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ãŒä½¿ç”¨ä¸­ãªã‚‰ã°ä¾‹å¤–ã‚’æŠ•ã’ã‚‹
 	if (header->GetIsOccupied())
 		throw "[Exception] This memory block is already occupied.";
 
-	// ––’[ŠÇ—ƒ^ƒO‚ğæ“¾
+	// æœ«ç«¯ç®¡ç†ã‚¿ã‚°ã‚’å–å¾—
 	size_t* tailer = (size_t*)((uint8_t*)header + size - sizeof(size_t));
 
 	if ((uint8_t*)header + size != m_buffer + m_bufferSize)
 	{
-		// Ÿ‚Ì—Ìˆæ‚ğŒ‹‡
+		// æ¬¡ã®é ˜åŸŸã‚’çµåˆ
 		FreeBlockHeader* next_header = (FreeBlockHeader*)((uint8_t*)header + size);
 		size_t* next_tailer = (size_t*)((uint8_t*)next_header + next_header->GetBlockSize() + sizeof(BlockHeader));
 		if (!next_header->GetIsOccupied())
 		{
-			// ƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚©‚çíœ‚·‚é
+			// ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã‹ã‚‰å‰Šé™¤ã™ã‚‹
 			if(next_header->GetBlockSize() >= TAG_SIZE)
 				DeleteFromFreeList(next_header, *next_tailer);
 
-			// æ“ªŠÇ—ƒ^ƒO‚Ìî•ñ‚ğ‘‚«Š·‚¦‚é
+			// å…ˆé ­ç®¡ç†ã‚¿ã‚°ã®æƒ…å ±ã‚’æ›¸ãæ›ãˆã‚‹
 			size_t new_block_size = header->GetBlockSize() + next_header->GetBlockSize() + TAG_SIZE;
 			header->SetBlockSize(new_block_size);
 			header->SetIsOccupied(false);
 
-			// ––’[ŠÇ—ƒ^ƒO‚Ìî•ñ‚ğ‘‚«Š·‚¦‚é
+			// æœ«ç«¯ç®¡ç†ã‚¿ã‚°ã®æƒ…å ±ã‚’æ›¸ãæ›ãˆã‚‹
 			*next_tailer = new_block_size + TAG_SIZE;
 
-			// Œ‹‡Œã‚Ì––’[ŠÇ—ƒ^ƒO‚ÌƒAƒhƒŒƒX‚ğ‘ã“ü
+			// çµåˆå¾Œã®æœ«ç«¯ç®¡ç†ã‚¿ã‚°ã®ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’ä»£å…¥
 			tailer = next_tailer;
 		}
 	}
 
 	if ((uint8_t*)header != m_buffer)
 	{
-		// ‘O‚Ì—Ìˆæ‚ğŒ‹‡
+		// å‰ã®é ˜åŸŸã‚’çµåˆ
 		size = *(size_t*)((uint8_t*)header - sizeof(size_t));
 		FreeBlockHeader* prev_header = (FreeBlockHeader*)((uint8_t*)header - size);
 		size_t* prev_tailer = (size_t*)((uint8_t*)header - sizeof(size_t));
 		if (!prev_header->GetIsOccupied())
 		{
-			// ƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚©‚çíœ‚·‚é
+			// ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã‹ã‚‰å‰Šé™¤ã™ã‚‹
 			if (prev_header->GetBlockSize() >= TAG_SIZE)
 				DeleteFromFreeList(prev_header, *prev_tailer);
 
-			// æ“ªŠÇ—ƒ^ƒO‚Ìî•ñ‚ğ‘‚«Š·‚¦‚é
+			// å…ˆé ­ç®¡ç†ã‚¿ã‚°ã®æƒ…å ±ã‚’æ›¸ãæ›ãˆã‚‹
 			size_t new_block_size = prev_header->GetBlockSize() + header->GetBlockSize() + TAG_SIZE;
 			prev_header->SetBlockSize(new_block_size);
 			prev_header->SetIsOccupied(false);
 
-			// ––’[ŠÇ—ƒ^ƒO‚Ìî•ñ‚ğ‘‚«Š·‚¦‚é
+			// æœ«ç«¯ç®¡ç†ã‚¿ã‚°ã®æƒ…å ±ã‚’æ›¸ãæ›ãˆã‚‹
 			*tailer = new_block_size + TAG_SIZE;
 
-			// Œ‹‡Œã‚Ìæ“ªŠÇ—ƒ^ƒO‚ÌƒAƒhƒŒƒX‚ğ‘ã“ü
+			// çµåˆå¾Œã®å…ˆé ­ç®¡ç†ã‚¿ã‚°ã®ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’ä»£å…¥
 			header = prev_header;
 		}
 	}
 
-	// Œ‹‡‚µ‚½ƒƒ‚ƒŠ—Ìˆæ‚Ìæ“ªŠÇ—ƒ^ƒO‚ğ•Ô‚·
+	// çµåˆã—ãŸãƒ¡ãƒ¢ãƒªé ˜åŸŸã®å…ˆé ­ç®¡ç†ã‚¿ã‚°ã‚’è¿”ã™
 	return header;
 }
 
 void TLSFAllocator::AddToFreeList(FreeBlockHeader* header, size_t size)
 {
-	// ƒƒ‚ƒŠƒuƒƒbƒN‚ªg—p’†‚È‚ç‚Î—áŠO‚ğ“Š‚°‚é
+	// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ãŒä½¿ç”¨ä¸­ãªã‚‰ã°ä¾‹å¤–ã‚’æŠ•ã’ã‚‹
 	if (header->GetIsOccupied())
 		throw "[Exception] This memory block is already occupied.";
 
-	// ƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚ÌÚ‘±ó‹µ‚Ì‰Šú‰»
+	// ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã®æ¥ç¶šçŠ¶æ³ã®åˆæœŸåŒ–
 	header->prevBlock = nullptr;
 	header->nextBlock = nullptr;
 
-	// ƒƒ‚ƒŠƒuƒƒbƒN‚ÌƒJƒeƒSƒŠ‚ğæ“¾‚·‚é
+	// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã®ã‚«ãƒ†ã‚´ãƒªã‚’å–å¾—ã™ã‚‹
 	auto categories = GetCategories(size);
 	size_t fli = std::get<0>(categories);
 	size_t sli = std::get<1>(categories);
 
-	// ƒJƒeƒSƒŠ‚ğˆê‚Â‰º‚°‚é
+	// ã‚«ãƒ†ã‚´ãƒªã‚’ä¸€ã¤ä¸‹ã’ã‚‹
 	if (sli) --sli; else if (fli > m_splitLog) { sli = m_split - 1; --fli; }
 
-	// ƒtƒ‰ƒO‚ğ—§‚Ä‚é
+	// ãƒ•ãƒ©ã‚°ã‚’ç«‹ã¦ã‚‹
 	m_fliFlagList |= 1ULL << fli;
 	m_sliFlagList[fli] |= 1ULL << sli;
 
-	// Šù‚ÉƒŠƒXƒg‚ª‚ ‚Á‚½ê‡‚ÍƒŠƒXƒg‚É‘}“ü‚·‚é
+	// æ—¢ã«ãƒªã‚¹ãƒˆãŒã‚ã£ãŸå ´åˆã¯ãƒªã‚¹ãƒˆã«æŒ¿å…¥ã™ã‚‹
 	if (m_freeBlockList[fli * m_split + sli])
 	{
 		FreeBlockHeader* next_header = m_freeBlockList[fli * m_split + sli];
@@ -213,41 +215,41 @@ void TLSFAllocator::AddToFreeList(FreeBlockHeader* header, size_t size)
 		next_header->prevBlock = header;
 	}
 
-	// ƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚É’Ç‰Á
+	// ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã«è¿½åŠ 
 	m_freeBlockList[fli * m_split + sli] = header;
 }
 
 void TLSFAllocator::DeleteFromFreeList(FreeBlockHeader* header, size_t size)
 {
-	// ƒƒ‚ƒŠƒuƒƒbƒN‚ªg—p’†‚È‚ç‚Î—áŠO‚ğ“Š‚°‚é
+	// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ãŒä½¿ç”¨ä¸­ãªã‚‰ã°ä¾‹å¤–ã‚’æŠ•ã’ã‚‹
 	if (header->GetIsOccupied())
 		throw "[Exception] This memory block is already occupied.";
 
 	if (header->GetBlockSize() < TAG_SIZE)
 		throw "[Exception] This memory block is not expected to be in list.";
 
-	// ƒƒ‚ƒŠƒuƒƒbƒN‚ÌƒJƒeƒSƒŠ‚ğæ“¾‚·‚é
+	// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã®ã‚«ãƒ†ã‚´ãƒªã‚’å–å¾—ã™ã‚‹
 	auto categories = GetCategories(size);
 	size_t fli = std::get<0>(categories);
 	size_t sli = std::get<1>(categories);
 
-	// ƒJƒeƒSƒŠ‚ğˆê‚Â‰º‚°‚é
+	// ã‚«ãƒ†ã‚´ãƒªã‚’ä¸€ã¤ä¸‹ã’ã‚‹
 	if (sli) --sli; else if (fli > m_splitLog) { sli = m_split - 1; --fli; }
 
-	// ƒuƒƒbƒNŠÔ‚ÌÚ‘±‚ğØ‚é
+	// ãƒ–ãƒ­ãƒƒã‚¯é–“ã®æ¥ç¶šã‚’åˆ‡ã‚‹
 	if (header->nextBlock != nullptr)
 		header->nextBlock->prevBlock = header->prevBlock;
 	if (header->prevBlock != nullptr)
 		header->prevBlock->nextBlock = header->nextBlock;
 
-	// ˆ—’†‚Ìƒƒ‚ƒŠƒuƒƒbƒN‚ªƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚Ìæ“ª‚¾‚Á‚½ê‡
-	// ‚Ü‚½‚Í’¼‘O‚ÌƒŠƒXƒg‚ªnullptr‚¾‚Á‚½ê‡
+	// å‡¦ç†ä¸­ã®ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ãŒãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã®å…ˆé ­ã ã£ãŸå ´åˆ
+	// ã¾ãŸã¯ç›´å‰ã®ãƒªã‚¹ãƒˆãŒnullptrã ã£ãŸå ´åˆ
 	if (header == m_freeBlockList[fli * m_split + sli] || header->prevBlock == nullptr)
 	{
-		// Ÿ‚Ìƒƒ‚ƒŠƒuƒƒbƒN‚ğƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚Æ‚·‚é
+		// æ¬¡ã®ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã‚’ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã¨ã™ã‚‹
 		m_freeBlockList[fli * m_split + sli] = header->nextBlock;
 
-		// ‚»‚ÌŒ‹‰Ênullptr‚Æ‚È‚Á‚½ê‡Aƒtƒ‰ƒO‚ğ‰º‚·
+		// ãã®çµæœnullptrã¨ãªã£ãŸå ´åˆã€ãƒ•ãƒ©ã‚°ã‚’ä¸‹ã™
 		if (m_freeBlockList[fli * m_split + sli] == nullptr)
 		{
 			m_sliFlagList[fli] &= ~(1 << sli);
@@ -259,53 +261,53 @@ void TLSFAllocator::DeleteFromFreeList(FreeBlockHeader* header, size_t size)
 
 void* TLSFAllocator::Alloc(const size_t size)
 {
-	// ƒƒbƒN‚ğ‚Æ‚é
-	std::lock_guard<std::mutex> lock(m_mutex);
+	// ãƒ­ãƒƒã‚¯ã‚’ã¨ã‚‹
+	if (IsThreadSafe) std::lock_guard<std::mutex> lock(m_mutex);
 
-	// 0byte‚ÌŠm•Û‚Å‚Í‰½‚à‚µ‚È‚¢
+	// 0byteã®ç¢ºä¿ã§ã¯ä½•ã‚‚ã—ãªã„
 	if (!size) return nullptr;
 
-	// ƒƒ‚ƒŠƒuƒƒbƒN‚ÌƒJƒeƒSƒŠ‚ğæ“¾‚·‚é
+	// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã®ã‚«ãƒ†ã‚´ãƒªã‚’å–å¾—ã™ã‚‹
 	auto categories = GetCategories(size + TAG_SIZE);
 	size_t fli = std::get<0>(categories);
 	size_t sli = std::get<1>(categories);
 
-	// ƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚É“o˜^‚ª‚ ‚Á‚½ê‡
+	// ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã«ç™»éŒ²ãŒã‚ã£ãŸå ´åˆ
 	if (m_freeBlockList[fli * m_split + sli] != nullptr)
 	{
-		// ƒƒ‚ƒŠƒuƒƒbƒN‚Ìƒwƒbƒ_‚ğæ“¾‚·‚é
+		// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã®ãƒ˜ãƒƒãƒ€ã‚’å–å¾—ã™ã‚‹
 		FreeBlockHeader* header = m_freeBlockList[fli * m_split + sli];
 
-		// ƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚É“o˜^‚³‚ê‚Ä‚¢‚é‰Â”\«‚ª‚ ‚éê‡Aíœ‚·‚é
+		// ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã«ç™»éŒ²ã•ã‚Œã¦ã„ã‚‹å¯èƒ½æ€§ãŒã‚ã‚‹å ´åˆã€å‰Šé™¤ã™ã‚‹
 		if (header->GetBlockSize() >= TAG_SIZE)
 			DeleteFromFreeList(header, header->GetBlockSize() + TAG_SIZE);
 
-		// è—Lƒtƒ‰ƒO‚ğ—§‚Ä‚é
+		// å æœ‰ãƒ•ãƒ©ã‚°ã‚’ç«‹ã¦ã‚‹
 		header->SetIsOccupied(true);
 
-		// ƒƒ‚ƒŠƒuƒƒbƒN‚Ìƒwƒbƒ_‚ğ•Ô‚·
+		// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã®ãƒ˜ãƒƒãƒ€ã‚’è¿”ã™
 		return (uint8_t*)header + sizeof(BlockHeader);
 	}
 
-	// ‚»‚¤‚Å‚È‚¢ê‡
+	// ãã†ã§ãªã„å ´åˆ
 	else
 	{
-		// ‚æ‚è‘å‚«‚È‘æ2ƒJƒeƒSƒŠ‚ğ’T‚·
+		// ã‚ˆã‚Šå¤§ããªç¬¬2ã‚«ãƒ†ã‚´ãƒªã‚’æ¢ã™
 		size_t sli_flag = m_sliFlagList[fli];
 		size_t enable_list = sli_flag & (ULLONG_MAX << sli);
 
-		// ‘¶İ‚µ‚½ê‡
+		// å­˜åœ¨ã—ãŸå ´åˆ
 		if (enable_list)
 		{
-			// ƒƒ‚ƒŠƒuƒƒbƒN‚Ìƒwƒbƒ_‚ğæ“¾‚·‚é
+			// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã®ãƒ˜ãƒƒãƒ€ã‚’å–å¾—ã™ã‚‹
 			sli = LeastSignificantBit(enable_list);
 			FreeBlockHeader* header = m_freeBlockList[fli * m_split + sli];
 
-			// ƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚É“o˜^‚³‚ê‚Ä‚¢‚é‰Â”\«‚ª‚ ‚éê‡Aíœ‚·‚é
+			// ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã«ç™»éŒ²ã•ã‚Œã¦ã„ã‚‹å¯èƒ½æ€§ãŒã‚ã‚‹å ´åˆã€å‰Šé™¤ã™ã‚‹
 			if (header->GetBlockSize() >= TAG_SIZE)
 				DeleteFromFreeList(header, header->GetBlockSize() + TAG_SIZE);
 
-			// •ªŠ„‚·‚é‚½‚ß‚Ì—Ìˆæ‚ª\•ª‚É‚ ‚éê‡Aƒƒ‚ƒŠ—Ìˆæ‚ğ•ªŠ„‚·‚é
+			// åˆ†å‰²ã™ã‚‹ãŸã‚ã®é ˜åŸŸãŒååˆ†ã«ã‚ã‚‹å ´åˆã€ãƒ¡ãƒ¢ãƒªé ˜åŸŸã‚’åˆ†å‰²ã™ã‚‹
 			if(header->GetBlockSize() > size + TAG_SIZE)
 			{
 				auto headers = DevideMemory((FreeBlockHeader*)header, size + TAG_SIZE);
@@ -313,57 +315,57 @@ void* TLSFAllocator::Alloc(const size_t size)
 					throw "[Exception] Unexpected return value.";
 				FreeBlockHeader* new_header = std::get<1>(headers);
 
-				// •ªŠ„Œã‚Ì—Ìˆæ‚É\•ª‚ÈƒXƒy[ƒX‚ª‚ ‚Á‚½ê‡AƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚É“o˜^‚·‚é
+				// åˆ†å‰²å¾Œã®é ˜åŸŸã«ååˆ†ãªã‚¹ãƒšãƒ¼ã‚¹ãŒã‚ã£ãŸå ´åˆã€ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã«ç™»éŒ²ã™ã‚‹
 				if (new_header->GetBlockSize() + TAG_SIZE >= FREE_TAG_SIZE)
 					AddToFreeList(new_header, new_header->GetBlockSize() + TAG_SIZE);
 			}
 
-			// è—Lƒtƒ‰ƒO‚ğ—§‚Ä‚é
+			// å æœ‰ãƒ•ãƒ©ã‚°ã‚’ç«‹ã¦ã‚‹
 			header->SetIsOccupied(true);
 
-			// ƒƒ‚ƒŠƒuƒƒbƒN‚Ìƒwƒbƒ_‚ğ•Ô‚·
+			// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã®ãƒ˜ãƒƒãƒ€ã‚’è¿”ã™
 			return (uint8_t*)header + sizeof(BlockHeader);
 		}
 
-		// ‘¶İ‚µ‚È‚©‚Á‚½ê‡
+		// å­˜åœ¨ã—ãªã‹ã£ãŸå ´åˆ
 		else
 		{
-			// ‚æ‚è‘å‚«‚È‘æ1ƒJƒeƒSƒŠ‚ğ’T‚·
+			// ã‚ˆã‚Šå¤§ããªç¬¬1ã‚«ãƒ†ã‚´ãƒªã‚’æ¢ã™
 			enable_list = m_fliFlagList & (ULLONG_MAX << (fli + 1));
 
-			// ‘¶İ‚µ‚½ê‡
+			// å­˜åœ¨ã—ãŸå ´åˆ
 			if (enable_list)
 			{
-				// ƒƒ‚ƒŠƒuƒƒbƒN‚Ìƒwƒbƒ_‚ğæ“¾‚·‚é
+				// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã®ãƒ˜ãƒƒãƒ€ã‚’å–å¾—ã™ã‚‹
 				fli = LeastSignificantBit(enable_list);
 				sli = LeastSignificantBit(m_sliFlagList[fli]);
 				FreeBlockHeader* header = m_freeBlockList[fli * m_split + sli];
 
-				// ƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚É“o˜^‚³‚ê‚Ä‚¢‚é‰Â”\«‚ª‚ ‚éê‡Aíœ‚·‚é
+				// ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã«ç™»éŒ²ã•ã‚Œã¦ã„ã‚‹å¯èƒ½æ€§ãŒã‚ã‚‹å ´åˆã€å‰Šé™¤ã™ã‚‹
 				if (header->GetBlockSize() >= TAG_SIZE)
 					DeleteFromFreeList(header, header->GetBlockSize() + TAG_SIZE);
 
-				// •ªŠ„‚·‚é‚½‚ß‚Ì—Ìˆæ‚ª\•ª‚É‚ ‚éê‡Aƒƒ‚ƒŠ—Ìˆæ‚ğ•ªŠ„‚·‚é
+				// åˆ†å‰²ã™ã‚‹ãŸã‚ã®é ˜åŸŸãŒååˆ†ã«ã‚ã‚‹å ´åˆã€ãƒ¡ãƒ¢ãƒªé ˜åŸŸã‚’åˆ†å‰²ã™ã‚‹
 				if (header->GetBlockSize() > size + TAG_SIZE)
 				{
 					auto headers = DevideMemory((FreeBlockHeader*)header, size + TAG_SIZE);
 					if (header != std::get<0>(headers))
 						throw "[Exception] Unexpected return value.";
 
-					// •ªŠ„Œã‚Ì—Ìˆæ‚É\•ª‚ÈƒXƒy[ƒX‚ª‚ ‚Á‚½ê‡AƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚É“o˜^‚·‚é
+					// åˆ†å‰²å¾Œã®é ˜åŸŸã«ååˆ†ãªã‚¹ãƒšãƒ¼ã‚¹ãŒã‚ã£ãŸå ´åˆã€ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã«ç™»éŒ²ã™ã‚‹
 					FreeBlockHeader* new_header = std::get<1>(headers);
 					if (new_header->GetBlockSize() + TAG_SIZE >= FREE_TAG_SIZE)
 						AddToFreeList(new_header, new_header->GetBlockSize() + TAG_SIZE);
 				}
 
-				// è—Lƒtƒ‰ƒO‚ğ—§‚Ä‚é
+				// å æœ‰ãƒ•ãƒ©ã‚°ã‚’ç«‹ã¦ã‚‹
 				header->SetIsOccupied(true);
 
-				// ƒƒ‚ƒŠƒuƒƒbƒN‚Ìƒwƒbƒ_‚ğ•Ô‚·
+				// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã®ãƒ˜ãƒƒãƒ€ã‚’è¿”ã™
 				return (uint8_t*)header + sizeof(BlockHeader);
 			}
 
-			// ‚»‚ê‚Å‚à‘¶İ‚µ‚È‚©‚Á‚½ê‡AŠm•Û¸”s
+			// ãã‚Œã§ã‚‚å­˜åœ¨ã—ãªã‹ã£ãŸå ´åˆã€ç¢ºä¿å¤±æ•—
 			else
 			{
 				return nullptr;
@@ -374,32 +376,35 @@ void* TLSFAllocator::Alloc(const size_t size)
 
 void TLSFAllocator::Free(void* ptr)
 {
-	// ƒƒbƒN‚ğ‚Æ‚é
-	std::lock_guard<std::mutex> lock(m_mutex);
+	// ãƒ­ãƒƒã‚¯ã‚’ã¨ã‚‹
+	if (IsThreadSafe) std::lock_guard<std::mutex> lock(m_mutex);
 
-	// nullptr‚ğ“n‚³‚ê‚½‚ç‰½‚à‚µ‚È‚¢
+	// nullptrã‚’æ¸¡ã•ã‚ŒãŸã‚‰ä½•ã‚‚ã—ãªã„
 	if (ptr == nullptr) return;
 
-	// ƒwƒbƒ_ˆÊ’u‚Éƒ|ƒCƒ“ƒ^‚ğˆÚ“®
+	// ãƒ˜ãƒƒãƒ€ä½ç½®ã«ãƒã‚¤ãƒ³ã‚¿ã‚’ç§»å‹•
 	BlockHeader* header = (BlockHeader*)((uint8_t*)ptr - sizeof(BlockHeader));
 
-	// è—Lƒtƒ‰ƒO‚ğ‰º‚·
+	// å æœ‰ãƒ•ãƒ©ã‚°ã‚’ä¸‹ã™
 	header->SetIsOccupied(false);
 
-	// ƒƒ‚ƒŠ—Ìˆæ‚ğŒ‹‡‚·‚é
+	// ãƒ¡ãƒ¢ãƒªé ˜åŸŸã‚’çµåˆã™ã‚‹
 	header = MergeMemory((FreeBlockHeader*)header, header->GetBlockSize() + TAG_SIZE);
 
-	// ƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚É’Ç‰Á‚·‚é‚½‚ß‚É\•ª‚È—Ìˆæ‚ª‚ ‚é‚È‚ç‚ÎA’Ç‰Á‚·‚é
+	// ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã«è¿½åŠ ã™ã‚‹ãŸã‚ã«ååˆ†ãªé ˜åŸŸãŒã‚ã‚‹ãªã‚‰ã°ã€è¿½åŠ ã™ã‚‹
 	if(header->GetBlockSize() + TAG_SIZE >= FREE_TAG_SIZE)
 		AddToFreeList((FreeBlockHeader*)header, header->GetBlockSize() + TAG_SIZE);
 }
 
 void TLSFAllocator::PrintDebugInfo()
 {
-	// ƒƒ‚ƒŠƒv[ƒ‹‚Ìæ“ª‚ÌƒAƒhƒŒƒX
+	// ãƒ­ãƒƒã‚¯ã‚’å–ã‚‹
+	if (IsThreadSafe) std::lock_guard<std::mutex> lock(m_mutex);
+
+	// ãƒ¡ãƒ¢ãƒªãƒ—ãƒ¼ãƒ«ã®å…ˆé ­ã®ã‚¢ãƒ‰ãƒ¬ã‚¹
 	BlockHeader* block_address = (BlockHeader*)m_buffer;
 
-	// ƒƒ‚ƒŠ‚ÌƒuƒƒbƒNî•ñ‚ğƒvƒŠƒ“ƒg
+	// ãƒ¡ãƒ¢ãƒªã®ãƒ–ãƒ­ãƒƒã‚¯æƒ…å ±ã‚’ãƒ—ãƒªãƒ³ãƒˆ
 	printf("\n");
 	printf("[ MEMORY TABLE ]\n");
 	printf("---------------------------------------------------------\n");
@@ -407,7 +412,7 @@ void TLSFAllocator::PrintDebugInfo()
 	printf("---------------------------------------------------------\n");
 	while((uint8_t*)block_address < m_buffer + m_bufferSize)
 	{
-		// ƒƒ‚ƒŠƒuƒƒbƒN‚Ìî•ñ‚ğo—Í
+		// ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ã®æƒ…å ±ã‚’å‡ºåŠ›
 		bool is_occupied = block_address->GetIsOccupied();
 		size_t block_size = block_address->GetBlockSize();
 		if (is_occupied) printf(" %018p : %18llu[byte], occupied\n", block_address, block_size + TAG_SIZE);
@@ -416,7 +421,7 @@ void TLSFAllocator::PrintDebugInfo()
 	}
 	printf("---------------------------------------------------------\n");
 
-	// ƒtƒŠ[ƒuƒƒbƒNƒŠƒXƒg‚Ìî•ñ‚ğƒvƒŠƒ“ƒg
+	// ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒƒã‚¯ãƒªã‚¹ãƒˆã®æƒ…å ±ã‚’ãƒ—ãƒªãƒ³ãƒˆ
 	printf("[ FREE BLOCK LIST ]\n");
 	for (int i = 0; i < 64; ++i)
 		for (int j = 0; j < m_split; ++j)
