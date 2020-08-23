@@ -1,6 +1,8 @@
 ﻿#pragma once
 
+#include <climits>
 #include <cmath>
+#include <cstring>
 #include <mutex>
 #include <tuple>
 
