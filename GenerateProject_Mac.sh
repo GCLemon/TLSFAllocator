@@ -8,4 +8,4 @@ mkdir build
 cd build
 
 # プロジェクトの作成
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release ..

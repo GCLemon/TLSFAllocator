@@ -14,78 +14,78 @@
 class DynamicLinkLibrary
 {
 private:
-	mutable std::atomic<int32_t> m_reference;
+    mutable std::atomic<int32_t> m_reference;
 
 #if _WIN32
-	HMODULE m_dll;
+    HMODULE m_dll;
 #else
-	void* m_dll = nullptr;
+    void* m_dll = nullptr;
 #endif
 
 public:
-	DynamicLinkLibrary()
-	{
-		m_dll = nullptr;
-	}
+    DynamicLinkLibrary()
+    {
+        m_dll = nullptr;
+    }
 
-	~DynamicLinkLibrary()
-	{
-		Reset();
-	}
+    ~DynamicLinkLibrary()
+    {
+        Reset();
+    }
 
-	void Reset()
-	{
-		if (m_dll != nullptr)
-		{
+    void Reset()
+    {
+        if (m_dll != nullptr)
+        {
 #if _WIN32
-			::FreeLibrary(m_dll);
+            ::FreeLibrary(m_dll);
 #else
-			dlclose(m_dll);
+            dlclose(m_dll);
 #endif
-			m_dll = nullptr;
-		}
-	}
+            m_dll = nullptr;
+        }
+    }
 
-	bool Load(const char* path)
-	{
+    bool Load(const char* path)
+    {
 #if _WIN32
-		m_dll = ::LoadLibraryA(path);
+        m_dll = ::LoadLibraryA(path);
 #else
-		m_dll = dlopen(path, RTLD_LAZY);
+        m_dll = dlopen(path, RTLD_LAZY);
 #endif
-		return m_dll != nullptr;
-	}
+        return m_dll != nullptr;
+    }
 
-	template <typename T> T GetProc(const char* name)
-	{
+    template <typename T> T GetProc(const char* name)
+    {
 #if _WIN32
-		void* pProc = ::GetProcAddress(m_dll, name);
+        void* pProc = ::GetProcAddress(m_dll, name);
 #else
-		void* pProc = dlsym(m_dll, name);
+        void* pProc = dlsym(m_dll, name);
 #endif
-		return (T)(pProc);
-	}
+        return (T)(pProc);
+    }
 
-	int AddRef()
-	{
-		std::atomic_fetch_add_explicit(&m_reference, 1, std::memory_order_consume);
-		return m_reference;
-	}
+    int AddRef()
+    {
+        std::atomic_fetch_add_explicit(&m_reference, 1, std::memory_order_consume);
+        return m_reference;
+    }
 
-	int GetRef()
-	{
-		return m_reference;
-	}
+    int GetRef()
+    {
+        return m_reference;
+    }
 
-	int Release()
-	{
-		assert(m_reference > 0);
-		bool destroy = std::atomic_fetch_sub_explicit(&m_reference, 1, std::memory_order_consume) == 1;
-		if (destroy)
-		{
-			delete this;
-			return 0;
-		}
-		return m_reference;
-	}
+    int Release()
+    {
+        assert(m_reference > 0);
+        bool destroy = std::atomic_fetch_sub_explicit(&m_reference, 1, std::memory_order_consume) == 1;
+        if (destroy)
+        {
+            delete this;
+            return 0;
+        }
+        return m_reference;
+    }
 };

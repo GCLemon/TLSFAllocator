@@ -27,15 +27,15 @@
 
 extern "C"
 {
-	DLL_EXPORT void* STDCALL dll_TLSFAllocator_Constructor_0(void* ptr, size_t size, size_t split);
+    DLL_EXPORT void* STDCALL dll_TLSFAllocator_Constructor_0(void* ptr, size_t size, size_t split);
 
-	DLL_EXPORT void* STDCALL dll_TLSFAllocator_Constructor_1(size_t size, size_t split);
+    DLL_EXPORT void* STDCALL dll_TLSFAllocator_Constructor_1(size_t size, size_t split);
 
-	DLL_EXPORT void STDCALL dll_TLSFAllocator_Destructor(void* selfPtr, size_t size, size_t split);
+    DLL_EXPORT void STDCALL dll_TLSFAllocator_Destructor(void* selfPtr, size_t size, size_t split);
 
-	DLL_EXPORT void* STDCALL dll_TLSFAllocator_Alloc(void* selfPtr, const size_t size);
+    DLL_EXPORT void* STDCALL dll_TLSFAllocator_Alloc(void* selfPtr, const size_t size);
 
-	DLL_EXPORT void STDCALL dll_TLSFAllocator_Free(void* selfPtr, void* ptr);
+    DLL_EXPORT void STDCALL dll_TLSFAllocator_Free(void* selfPtr, void* ptr);
 
-	DLL_EXPORT void STDCALL dll_TLSFAllocator_PrintDebugInfo(void* selfPtr);
+    DLL_EXPORT void STDCALL dll_TLSFAllocator_PrintDebugInfo(void* selfPtr);
 }

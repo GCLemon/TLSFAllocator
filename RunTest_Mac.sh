@@ -7,7 +7,7 @@ cd `dirname $0`/build
 make
 
 # dllを実行ファイルの隣に移動する
-mv src/libTLSFAllocator.dylib test
+cp src/libTLSFAllocator.dylib test
 
 # 実行ファイルのある場所に移動
 cd test
