@@ -6,12 +6,12 @@
 #include "DynamicLinkLibrary.h"
 
 /**
- @brief TLSF�������A���P�[�^�̃��C�u����
+ @brief TLSFメモリアロケータのライブラリ
  */
 static std::shared_ptr<DynamicLinkLibrary> dllTlsf = nullptr;
 
 /**
- @brief �v���O�����N�����Ƀ��C�u������ǂݍ���
+ @brief プログラム起動時にライブラリを読み込む
  */
 void Initialize()
 {
@@ -27,7 +27,7 @@ void Initialize()
 }
 
 /**
- @brief �v���O�����I�����Ƀ��C�u�������J������
+ @brief プログラム終了時にライブラリを開放する
  */
 void Terminate()
 {
@@ -35,13 +35,13 @@ void Terminate()
 }
 
 /**
- @brief �������A���P�[�^
+ @brief メモリアロケータ
  */
 class TLSFAllocator
 {
 private:
     /**
-     @brief ���g�̃|�C���^
+     @brief 自身のポインタ
      */
     void* selfPtr = nullptr;
 
@@ -90,10 +90,10 @@ private:
 
 public:
     /**
-     @brief �R���X�g���N�^
-     @param ptr �����������̈�̐擪�A�h���X
-     @param size �����������̈�̃T�C�Y
-     @param split ��2�J�e�S���̕�����
+     @brief コンストラクタ
+     @param ptr 初期化した領域の先頭アドレス
+     @param size 初期化した領域のサイズ
+     @param split 第2カテゴリの分割数
      */
     TLSFAllocator(void* ptr, size_t size, size_t split = 8)
     {
@@ -101,9 +101,9 @@ public:
     }
 
     /**
-     @brief �R���X�g���N�^
-     @param size �����������̈�̃T�C�Y
-     @param split ��2�J�e�S���̕�����
+     @brief コンストラクタ
+     @param size 初期化した領域のサイズ
+     @param split 第2カテゴリの分割数
      */
     TLSFAllocator(size_t size, size_t split = 8)
     {
@@ -111,7 +111,7 @@ public:
     }
 
     /**
-     @brief �f�X�g���N�^
+     @brief デストラクタ
      */
     ~TLSFAllocator()
     {
@@ -119,9 +119,9 @@ public:
     }
 
     /**
-     @brief �̈���m�ۂ���
-     @param size �m�ۂ���̈�̃T�C�Y
-     @return �m�ۂ����̈�̐擪�A�h���X(�u���b�N�S�̂̃T�C�Y�ł͂Ȃ�)
+     @brief 領域を確保する
+     @param size 確保する領域のサイズ
+     @return 確保した領域の先頭アドレス(ブロック全体のサイズではない)
      */
     void* Alloc(const size_t size)
     {
@@ -129,8 +129,8 @@ public:
     }
 
     /**
-     @brief �m�ۂ����̈���������
-     @param ptr �������̈�̐擪�A�h���X(�u���b�N�S�̂̃T�C�Y�ł͂Ȃ�)S
+     @brief 確保した領域を解放する
+     @param ptr 解放する領域の先頭アドレス(ブロック全体のサイズではない)S
      */
     void Free(void* ptr)
     {
@@ -138,7 +138,7 @@ public:
     }
 
     /**
-     @brief ���݂̃������̓��e���v�����g����
+     @brief 現在のメモリの内容をプリントする
      */
     void PrintBufferInfo()
     {
