@@ -152,20 +152,26 @@ int main()
     double time;
 
     //  C++標準のメモリアロケータの計測
+    printf("[ C++ Standard Allocator ]\n");
+    printf("START\n");
     start = std::chrono::system_clock::now();
     StandardAllocatorTest(RANDOM_SEED, 1 * 1024 * 1024, 10000);
     end = std::chrono::system_clock::now();
     microsec = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     time = ((double)microsec) * 0.000001;
-    printf("C++ Standard Allocator : %lf[sec]\n", time);
+    printf("FINISH\n");
+    printf("Result : %lf[sec]\n", time);
 
     //  TLSFによるのメモリアロケータの計測
+    printf("[ TLSF Allocator ]\n");
+    printf("START\n");
     start = std::chrono::system_clock::now();
     TLSFAllocatorTest(RANDOM_SEED, 1 * 1024 * 1024, 10000);
     end = std::chrono::system_clock::now();
     microsec = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     time = ((double)microsec) * 0.000001;
-    printf("TLSF Allocator : %lf[sec]\n", time);
+    printf("FINISH\n");
+    printf("Result : %lf[sec]\n", time);
 
     Terminate();
 

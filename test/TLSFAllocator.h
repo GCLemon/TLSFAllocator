@@ -6,28 +6,28 @@
 #include "DynamicLinkLibrary.h"
 
 /**
- @brief TLSFƒƒ‚ƒŠƒAƒƒP[ƒ^‚Ìƒ‰ƒCƒuƒ‰ƒŠ
+ @brief TLSFï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½Pï¿½[ï¿½^ï¿½Ìƒï¿½ï¿½Cï¿½uï¿½ï¿½ï¿½ï¿½
  */
 static std::shared_ptr<DynamicLinkLibrary> dllTlsf = nullptr;
 
 /**
- @brief ƒvƒƒOƒ‰ƒ€‹N“®Žž‚Éƒ‰ƒCƒuƒ‰ƒŠ‚ð“Ç‚Ýž‚Þ
+ @brief ï¿½vï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½Éƒï¿½ï¿½Cï¿½uï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç‚Ýï¿½ï¿½ï¿½
  */
 void Initialize()
 {
     dllTlsf = std::shared_ptr<DynamicLinkLibrary>(new DynamicLinkLibrary());
 
 #ifdef _WIN32
-    dllTlsf->Load("TLSFAllocator.dll");
+    dllTlsf->Load("./TLSFAllocator.dll");
 #elif defined(__APPLE__)
-    dllTlsf->Load("libTLSFAllocator.dylib");
+    dllTlsf->Load("./libTLSFAllocator.dylib");
 #else
-    dllTlsf->Load("libTLSFAllocator.so");
+    dllTlsf->Load("./libTLSFAllocator.so");
 #endif
 }
 
 /**
- @brief ƒvƒƒOƒ‰ƒ€I—¹Žž‚Éƒ‰ƒCƒuƒ‰ƒŠ‚ðŠJ•ú‚·‚é
+ @brief ï¿½vï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ï¿½ï¿½Iï¿½ï¿½ï¿½ï¿½ï¿½Éƒï¿½ï¿½Cï¿½uï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void Terminate()
 {
@@ -35,13 +35,13 @@ void Terminate()
 }
 
 /**
- @brief ƒƒ‚ƒŠƒAƒƒP[ƒ^
+ @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½Pï¿½[ï¿½^
  */
 class TLSFAllocator
 {
 private:
     /**
-     @brief Ž©g‚Ìƒ|ƒCƒ“ƒ^
+     @brief ï¿½ï¿½ï¿½gï¿½Ìƒ|ï¿½Cï¿½ï¿½ï¿½^
      */
     void* selfPtr = nullptr;
 
@@ -90,10 +90,10 @@ private:
 
 public:
     /**
-     @brief ƒRƒ“ƒXƒgƒ‰ƒNƒ^
-     @param ptr ‰Šú‰»‚µ‚½—Ìˆæ‚Ìæ“ªƒAƒhƒŒƒX
-     @param size ‰Šú‰»‚µ‚½—Ìˆæ‚ÌƒTƒCƒY
-     @param split ‘æ2ƒJƒeƒSƒŠ‚Ì•ªŠ„”
+     @brief ï¿½Rï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^
+     @param ptr ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìˆï¿½Ìæ“ªï¿½Aï¿½hï¿½ï¿½ï¿½X
+     @param size ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìˆï¿½ÌƒTï¿½Cï¿½Y
+     @param split ï¿½ï¿½2ï¿½Jï¿½eï¿½Sï¿½ï¿½ï¿½Ì•ï¿½ï¿½ï¿½ï¿½ï¿½
      */
     TLSFAllocator(void* ptr, size_t size, size_t split = 8)
     {
@@ -101,9 +101,9 @@ public:
     }
 
     /**
-     @brief ƒRƒ“ƒXƒgƒ‰ƒNƒ^
-     @param size ‰Šú‰»‚µ‚½—Ìˆæ‚ÌƒTƒCƒY
-     @param split ‘æ2ƒJƒeƒSƒŠ‚Ì•ªŠ„”
+     @brief ï¿½Rï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^
+     @param size ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìˆï¿½ÌƒTï¿½Cï¿½Y
+     @param split ï¿½ï¿½2ï¿½Jï¿½eï¿½Sï¿½ï¿½ï¿½Ì•ï¿½ï¿½ï¿½ï¿½ï¿½
      */
     TLSFAllocator(size_t size, size_t split = 8)
     {
@@ -111,7 +111,7 @@ public:
     }
 
     /**
-     @brief ƒfƒXƒgƒ‰ƒNƒ^
+     @brief ï¿½fï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^
      */
     ~TLSFAllocator()
     {
@@ -119,9 +119,9 @@ public:
     }
 
     /**
-     @brief —Ìˆæ‚ðŠm•Û‚·‚é
-     @param size Šm•Û‚·‚é—Ìˆæ‚ÌƒTƒCƒY
-     @return Šm•Û‚µ‚½—Ìˆæ‚Ìæ“ªƒAƒhƒŒƒX(ƒuƒƒbƒN‘S‘Ì‚ÌƒTƒCƒY‚Å‚Í‚È‚¢)
+     @brief ï¿½Ìˆï¿½ï¿½ï¿½mï¿½Û‚ï¿½ï¿½ï¿½
+     @param size ï¿½mï¿½Û‚ï¿½ï¿½ï¿½Ìˆï¿½ÌƒTï¿½Cï¿½Y
+     @return ï¿½mï¿½Û‚ï¿½ï¿½ï¿½ï¿½Ìˆï¿½Ìæ“ªï¿½Aï¿½hï¿½ï¿½ï¿½X(ï¿½uï¿½ï¿½ï¿½bï¿½Nï¿½Sï¿½Ì‚ÌƒTï¿½Cï¿½Yï¿½Å‚Í‚È‚ï¿½)
      */
     void* Alloc(const size_t size)
     {
@@ -129,8 +129,8 @@ public:
     }
 
     /**
-     @brief Šm•Û‚µ‚½—Ìˆæ‚ð‰ð•ú‚·‚é
-     @param ptr ‰ð•ú‚·‚é—Ìˆæ‚Ìæ“ªƒAƒhƒŒƒX(ƒuƒƒbƒN‘S‘Ì‚ÌƒTƒCƒY‚Å‚Í‚È‚¢)S
+     @brief ï¿½mï¿½Û‚ï¿½ï¿½ï¿½ï¿½Ìˆï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+     @param ptr ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìˆï¿½Ìæ“ªï¿½Aï¿½hï¿½ï¿½ï¿½X(ï¿½uï¿½ï¿½ï¿½bï¿½Nï¿½Sï¿½Ì‚ÌƒTï¿½Cï¿½Yï¿½Å‚Í‚È‚ï¿½)S
      */
     void Free(void* ptr)
     {
@@ -138,7 +138,7 @@ public:
     }
 
     /**
-     @brief Œ»Ý‚Ìƒƒ‚ƒŠ‚Ì“à—e‚ðƒvƒŠƒ“ƒg‚·‚é
+     @brief ï¿½ï¿½ï¿½Ý‚Ìƒï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì“ï¿½ï¿½eï¿½ï¿½ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ï¿½
      */
     void PrintBufferInfo()
     {
