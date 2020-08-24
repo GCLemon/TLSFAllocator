@@ -94,6 +94,7 @@ void TLSFAllocatorTest(size_t random_seed, size_t alloc_size, size_t loop_count)
 
     // アロケータのインスタンスを作成
     TLSFAllocator* im = new TLSFAllocator(ptr, alloc_size);
+    im->SetIsTrehadSafe(true);
 
     // 諸々定数の宣言・初期化
     std::vector<uint8_t*> vec;

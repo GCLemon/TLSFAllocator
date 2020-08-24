@@ -127,16 +127,6 @@ private:
 public:
 
     /**
-	 @brief このメモリアロケータがスレッドセーフであるかを取得する
-	 */
-    bool GetIsThreadSafe() { return m_isThreadSafe; }
-
-    /**
-	 @brief このメモリアロケータがスレッドセーフにするかを設定する
-	 */
-    void SetIsTrehadSafe(bool value) { m_isThreadSafe = value; }
-
-    /**
      @brief コンストラクタ
      @param ptr 初期化した領域の先頭アドレス
      @param size 初期化した領域のサイズ
@@ -155,6 +145,16 @@ public:
      @brief デストラクタ
      */
     ~TLSFAllocator();
+
+    /**
+     @brief このメモリアロケータがスレッドセーフであるかを取得する
+     */
+    bool GetIsThreadSafe() { return m_isThreadSafe; }
+
+    /**
+     @brief このメモリアロケータをスレッドセーフにするかを設定する
+     */
+    void SetIsTrehadSafe(bool isThreadSafe) { m_isThreadSafe = isThreadSafe; }
 
     /**
      @brief 領域を確保する

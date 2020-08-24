@@ -59,12 +59,26 @@ private:
         return proc(size, split);
     }
 
-    static void  dll_TLSFAllocator_Destructor(void* selfPtr)
+    static void dll_TLSFAllocator_Destructor(void* selfPtr)
     {
         typedef void (*proc_t)(void*);
-        static proc_t proc = dllTlsf->GetProc<proc_t>(" dll_TLSFAllocator_Destructor");
+        static proc_t proc = dllTlsf->GetProc<proc_t>("dll_TLSFAllocator_Destructor");
         proc(selfPtr);
         selfPtr = nullptr;
+    }
+
+    static bool dll_TLSFAllocator_GetIsThreadSafe(void* selfPtr)
+    {
+        typedef bool (*proc_t)(void*);
+        static proc_t proc = dllTlsf->GetProc<proc_t>("dll_TLSFAllocator_GetIsThreadSafe");
+        return proc(selfPtr);
+    }
+
+    static void dll_TLSFAllocator_SetIsThreadSafe(void* selfPtr, bool isThreadSafe)
+    {
+        typedef void (*proc_t)(void*, bool);
+        static proc_t proc = dllTlsf->GetProc<proc_t>("dll_TLSFAllocator_SetIsThreadSafe");
+        proc(selfPtr, isThreadSafe);
     }
 
     static void* dll_TLSFAllocator_Alloc(void* selfPtr, const size_t size)
@@ -116,6 +130,22 @@ public:
     ~TLSFAllocator()
     {
         dll_TLSFAllocator_Destructor(selfPtr);
+    }
+
+    /**
+     @brief このメモリアロケータがスレッドセーフであるかを取得する
+     */
+    bool GetIsThreadSafe()
+    {
+        return dll_TLSFAllocator_GetIsThreadSafe(selfPtr);
+    }
+
+    /**
+     @brief このメモリアロケータをスレッドセーフにするかを設定する
+     */
+    void SetIsTrehadSafe(bool isThreadSafe)
+    {
+        dll_TLSFAllocator_SetIsThreadSafe(selfPtr, isThreadSafe);
     }
 
     /**

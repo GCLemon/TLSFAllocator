@@ -18,6 +18,18 @@ extern "C"
         delete selfAllocator;
     }
 
+    DLL_EXPORT bool STDCALL dll_TLSFAllocator_GetIsThreadSafe(void* selfPtr)
+    {
+        TLSFAllocator* selfAllocator = (TLSFAllocator*)selfPtr;
+        return selfAllocator->GetIsThreadSafe();
+    }
+
+    DLL_EXPORT void STDCALL dll_TLSFAllocator_SetIsThreadSafe(void* selfPtr, bool isThreadSafe)
+    {
+        TLSFAllocator* selfAllocator = (TLSFAllocator*)selfPtr;
+        selfAllocator->SetIsTrehadSafe(isThreadSafe);
+    }
+
     DLL_EXPORT void* STDCALL dll_TLSFAllocator_Alloc(void* selfPtr, const size_t size)
     {
         TLSFAllocator* selfAllocator = (TLSFAllocator*)selfPtr;
