@@ -6,7 +6,7 @@ cd `dirname $0`/build
 # コンパイル
 make
 
-# dllを実行ファイルの隣に移動する
+# 出力ディレクトリに移動
 cd RELEASE
 
 # テスト実行
