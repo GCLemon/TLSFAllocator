@@ -1,179 +1,140 @@
-﻿#pragma once
+#pragma once
 
-#include <climits>
-#include <cmath>
-#include <cstring>
+#include <memory>
 #include <mutex>
+#include <thread>
 #include <tuple>
 
-#include "TLSFAlgoHelper.h"
+#include <assert.h>
+#include <string.h>
 
-namespace tlsf
+#include "Helper.h"
+#include "BlockHeader.h"
+#include "BlockFooter.h"
+#include "FreeBlockList.h"
+
+namespace TLSFAllocator
 {
-    /**
-     @brief TLSFアルゴリズムによるメモリアロケータ
-    */
-    class TLSFAllocator
-    {
+class TLSFAllocator
+{
     private:
 
         /**
-         @brief スレッド排他制御用のインスタンス
-        */
-        std::mutex m_mutex;
+         @brief アロケータの唯一インスタンス
+         */
+        static TLSFAllocator* m_Instance;
 
         /**
-         @brief 管理中の領域の先頭アドレス
-        */
-        uint8_t* m_buffer;
+         @brief 排他処理用のロック
+         */
+        std::mutex m_Mutex;
 
         /**
-         @brief 管理中の領域の大きさ
-        */
-        size_t m_bufferSize;
+         @brief アロケータによって提供される領域
+         */
+        const uint8_t* m_Buffer;
+
+        /**
+         @brief アロケータによって提供される領域の大きさ
+         */
+        const uint64_t m_BufferSize;
 
         /**
          @brief フリーブロックリスト
-        */
-        FreeBlockHeader* m_freeBlockList[MAX_FREELIST];
+         */
+        FreeBlockList m_FreeBlockList;
 
         /**
-         @brief ブロックが各第1カテゴリに所属しているかのフラグ
-        */
-        size_t  m_fliFlagList;
+         @brief MonitorThread が有効か
+         */
+        const bool m_IsMonitorMode;
 
         /**
-         @brief ブロックが各第2カテゴリに所属しているかのフラグ
-        */
-        size_t m_sliFlagList[MAX_FLI_CATEGORY];
+         @brief MonitorThread が有効か
+         */
+        bool m_IsMonitoring;
 
         /**
-         @brief 第2カテゴリの分割数
-        */
-        size_t m_split;
+         @brief モニタリング用のスレッド
+         */
+        std::thread m_MonitorThread;
 
         /**
-         @brief 第2カテゴリの分割数(Logスケール)
-        */
-        size_t m_splitLog;
+         @brief プライベートコンストラクタ
+         */
+        TLSFAllocator(uint64_t bufferSize, bool isMonitorMode);
 
         /**
-         @brief コンストラクタでメモリ確保が行われたか
-        */
-        bool m_isBufferInternal;
+         @brief プライベートデストラクタ
+         */
+        ~TLSFAllocator();
 
         /**
-         @brief メモリ操作をスレッドセーフにするか
-        */ 
-        bool m_isThreadSafe;
+         @brief 指定子たメモリ領域から決められたサイズを切り出す
+         @param header 分割するメモリブロックのヘッダ
+         @param size 切り出す管理領域のサイズ
+         */
+        void DevideMemory(FreeBlockHeader* header, size_t size);
 
         /**
-         @brief 値が1である最上位ビットを取得する
-        @param x ビット列
-        */
-        inline size_t MostSignificantBit(size_t x);
+         @brief 指定したメモリ領域とその直後にあるメモリ領域を結合する
+         @param header1 結合対象のメモリブロックのヘッダ
+         @param header2 結合対象のメモリブロックのヘッダ
+         */
+        void MergeMemory(FreeBlockHeader* header1, FreeBlockHeader* header2);
 
         /**
-         @brief 値が1である最下位ビットを取得する
-        @param x ビット列
-        */
-        inline size_t LeastSignificantBit(size_t x);
-
-        /**
-         @brief メモリブロックのカテゴリを取得する
-        @param size 確保する領域のサイズ
-        @param split 第2カテゴリの分割数
-        @return カテゴリ情報を表すタプル
-        */
-        inline std::tuple<size_t, size_t> GetCategories(size_t size);
-
-        /**
-         @brief アロケータを初期化する
-        @param ptr 初期化した領域の先頭アドレス
-        @param size 初期化した領域のサイズ
-        @param split 第2カテゴリの分割数
-        @param isBufferInternal 
-        */
-        void Initialize(uint8_t* ptr, size_t size, size_t split);
-
-        /**
-         @brief メモリ領域を2つに分割する
-        @param header 分割するメモリブロックのヘッダ
-        @param total_size 切り出すメモリブロック全体のサイズ
-        @return 分割したメモリ領域の先頭管理タグ
-        */
-        std::tuple<FreeBlockHeader*, FreeBlockHeader*> DevideMemory(FreeBlockHeader* header, size_t total_size);
-
-        /**
-         @brief 指定したメモリ領域の両隣を結合する
-        @param header 結合するメモリブロックのヘッダ
-        @param total_size メモリブロック全体のサイズ
-        @return 結合したメモリ領域の先頭管理タグ
-        */
-        FreeBlockHeader* MergeMemory(FreeBlockHeader* header, size_t total_size);
-
-        /**
-         @brief フリーブロックリストに登録する
-        @param header フリーブロックリストに登録するメモリブロックのヘッダ
-        @param total_size メモリブロック全体のサイズ
-        */
-        void AddToFreeList(FreeBlockHeader* header, size_t total_size);
-
-        /**
-         @brief フリーブロックリストから削除する
-        @param header フリーブロックリストから削除するメモリブロックのヘッダ
-        @param total_size メモリブロック全体のサイズ
-        */
-        void DeleteFromFreeList(FreeBlockHeader* header, size_t total_sizee);
+         @brief メモリ領域を監視するスレッド
+         */
+        static void MonitorThread(TLSFAllocator* ptr);
 
     public:
 
         /**
-         @brief コンストラクタ
-        @param ptr 初期化した領域の先頭アドレス
-        @param size 初期化した領域のサイズ
-        @param split 第2カテゴリの分割数
-        */
-        TLSFAllocator(void* ptr, size_t size, size_t split);
+         @brief メモリ領域を確保する
+         @param count 格納するインスタンスの個数
+         @param size 格納するインスタンスの大きさ
+         @return 確保した領域の先頭アドレス
+         */
+        void* Malloc(size_t count, size_t size);
 
         /**
-         @brief コンストラクタ
-        @param size 初期化した領域のサイズ
-        @param split 第2カテゴリの分割数
-        */
-        TLSFAllocator(size_t size, size_t split);
+         @brief メモリ領域を確保し、0で初期化する
+         @param count 格納するインスタンスの個数
+         @param size 格納するインスタンスの大きさ
+         @return 確保した領域の先頭アドレス
+         */
+        void* Calloc(size_t count, size_t size);
 
         /**
-         @brief デストラクタ
-        */
-        ~TLSFAllocator();
+         @brief メモリ領域を再確保する
+         @param address 再確保元のアドレス nullptrならばMallocに同じ
+         @param count 格納するインスタンスの個数
+         @param size 格納するインスタンスの大きさ
+         @return 確保した領域の先頭アドレス
+         */
+        void* Realloc(void* address, size_t count, size_t size);
 
         /**
-         @brief このメモリアロケータがスレッドセーフであるかを取得する
-        */
-        bool GetIsThreadSafe() { return m_isThreadSafe; }
+         @brief メモリ領域を解放する
+         @param address 解放する領域のアドレス
+         */
+        void Free(void* address);
 
         /**
-         @brief このメモリアロケータをスレッドセーフにするかを設定する
-        */
-        void SetIsTrehadSafe(bool isThreadSafe) { m_isThreadSafe = isThreadSafe; }
+         @brief TLSFAllocatorクラスのインスタンスを取得する
+         */
+        static TLSFAllocator* GetInstance();
 
         /**
-         @brief 領域を確保する
-        @param size 確保する領域のサイズ
-        @return 確保した領域の先頭アドレス(ブロック全体のサイズではない)
-        */
-        void* Alloc(const size_t size);
+         @brief メモリアロケータの初期化を行う
+         */
+        static bool Initialize(uint64_t bufferSize, bool isMonitorMode);
 
         /**
-         @brief 確保した領域を解放する
-        @param ptr 解放する領域の先頭アドレス(ブロック全体のサイズではない)
-        */
-        void Free(void* ptr);
+         @brief メモリアロケータの終了処理を行う
+         */
+        static bool Terminate();
 
-        /**
-         @brief デバッグをプリントする
-        */
-        void PrintDebugInfo();
     };
 }
